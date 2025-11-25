@@ -1,9 +1,13 @@
 package iteration1;
 
+import generators.RandomData;
 import io.restassured.RestAssured;
 import io.restassured.filter.log.RequestLoggingFilter;
 import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.http.ContentType;
+import models.CreateUserRequest;
+import models.CreateUserResponse;
+import models.UserRole;
 import org.apache.http.HttpStatus;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeAll;
@@ -12,44 +16,36 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import requests.AdminCreateUserRequest;
+import specs.RequestSpecs;
+import specs.ResponseSpecs;
 
 import java.util.List;
 import java.util.stream.Stream;
 
 import static io.restassured.RestAssured.given;
 
-public class CreateUserTest {
-    @BeforeAll
-    public static void setupRestAssured() {
-        RestAssured.filters(
-                List.of(new ResponseLoggingFilter(),
-                        new RequestLoggingFilter())
-        );
-
-    }
+public class CreateUserTest extends BaseTest{
 
     @Test
     public void adminCanCreateUserWithCorrectData() {
 
+        // создание объекта пользователя
+        CreateUserRequest createUserRequest = CreateUserRequest.builder()
+                        .username(RandomData.getUsername())
+                        .password(RandomData.getPassword())
+                        .role(UserRole.USER.toString())
+                        .build();
+
         // создание пользователя
-        given()
-                .header("Authorization", "Basic YWRtaW46YWRtaW4=")
-                .contentType(ContentType.JSON)
-                .accept(ContentType.JSON)
-                .body("""
-                        {
-                          "username": "kate20003",
-                          "password": "Kate2000#P",
-                          "role": "USER"
-                        }
-                        """)
-                .post("http://localhost:4111/api/v1/admin/users")
-                .then()
-                .assertThat()
-                .statusCode(HttpStatus.SC_CREATED)
-                .body("username", Matchers.equalTo("kate20003"))
-                .body("password", Matchers.not(Matchers.equalTo("Kate2000#P")))
-                .body("role", Matchers.equalTo("USER"));
+        CreateUserResponse createUserResponse = new AdminCreateUserRequest(RequestSpecs.adminSpec(),
+                ResponseSpecs.entityWasCreated())
+                .post(createUserRequest)
+                .extract().as(CreateUserResponse.class);
+
+        softly.assertThat(createUserRequest.getUsername()).isEqualTo(createUserResponse.getUsername());
+        softly.assertThat(createUserRequest.getPassword()).isNotEqualTo(createUserResponse.getPassword());
+        softly.assertThat(createUserRequest.getRole()).isEqualTo(createUserResponse.getRole());
     }
 
     public static Stream<Arguments> userInvalidData() {
