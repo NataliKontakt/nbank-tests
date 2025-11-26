@@ -6,8 +6,7 @@ import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
 import models.LoginUserRequest;
-import requests.AdminCreateUserRequest;
-import requests.AdminLoginUserRequest;
+import requests.LoginUserRequester;
 
 import java.util.List;
 
@@ -36,7 +35,7 @@ public class RequestSpecs {
     public static RequestSpecification authSpec(String username, String password){
 
         //получаем токен юзера
-        String userAuthHeder = new AdminLoginUserRequest(
+        String userAuthHeder = new LoginUserRequester(
                 RequestSpecs.unauthSpec(),
                 ResponseSpecs.requestReturnsOK())
                 .post(LoginUserRequest.builder().username(username).password(password).build())
